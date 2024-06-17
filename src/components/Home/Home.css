@@ -1,0 +1,39 @@
+main {
+    display: inline;
+    width: 100%;
+}
+
+.header {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgb(249, 249, 249, 0.7);
+}
+
+.content { 
+    padding: 0px 0px 0px 10px;
+}
+
+.logout {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 10px;
+}
+
+.logout:hover {
+    background-color: #e84118;
+}
+
+.icon {
+    margin-right: 10px;
+}
