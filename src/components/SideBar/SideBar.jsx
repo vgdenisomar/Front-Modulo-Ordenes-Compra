@@ -16,15 +16,15 @@ function SideBar() {
                 <MenuItem
                     icon = {<MenuIcon />}
                     onClick={() => setCollapsed(!collapsed)}
-                    style={{ textAlign: "center", height:"10vh" }}
+                    style={{ textAlign: "center", minHeight:"64px" }}
                 >
                     {" "}
                     <h2>Adminstrador</h2>
                 </MenuItem>
                 <SubMenu icon={<LockOutlinedIcon />} label="Seguridad">
                     <MenuItem component={<Link to="user" />}> Usuarios</MenuItem>
-                    <MenuItem> Roles </MenuItem>
-                    <MenuItem> Permisos </MenuItem>
+                    <MenuItem component={<Link to="role" />}> Roles </MenuItem>
+                    <MenuItem component={<Link to="permission" />}> Permisos </MenuItem>
                 </SubMenu>
                 <MenuItem icon={<AssignmentTurnedInOutlinedIcon />}> Ordenes de Compra </MenuItem>
                 <MenuItem icon={<Diversity3OutlinedIcon  />}> Proveedores </MenuItem>

@@ -1,16 +1,16 @@
 import TableScroll from "../../Shared/Table/Table";
 import columns from "../../../helper/DataStructure/UserColumns";
 import { Outlet } from "react-router-dom";
-import PeopleOutlineOutlinedIcon from "@mui/icons-material/PeopleOutlineOutlined";
+import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 
-function UserList() {
+function RoleList() {
   return (
     <div>
-      <h2 className="titleCatalog"><PeopleOutlineOutlinedIcon /> Usuarios</h2>
+      <h2 className="titleCatalog"><ConstructionOutlinedIcon /> Roles</h2>
       <TableScroll columns={columns} path={"/api/usuarios"} />
       <Outlet />
     </div>
   );
 }
 
-export default UserList;
+export default RoleList;

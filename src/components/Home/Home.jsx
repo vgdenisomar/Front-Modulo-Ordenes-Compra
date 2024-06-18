@@ -1,19 +1,72 @@
+import { Avatar, Box, IconButton, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
+import Toolbar from '@mui/material/Toolbar';
 import React from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
+import "../../App.css";
 import SideBar from "../SideBar/SideBar";
-import "../../App.css"
-import "./Home.css"
-import PowerSettingsNewOutlinedIcon from '@mui/icons-material/PowerSettingsNewOutlined';
+import "./Home.css";
+import { clearCookies } from "../../helper/CookieService";
 
 function Home() {
+    const [anchorElUser, setAnchorElUser] = React.useState(null);
+    const nav = useNavigate();
+
+    const handleOpenUserMenu = (event) => {
+        setAnchorElUser(event.currentTarget);
+    };
+
+    const handleCloseUserMenu = () => {
+        setAnchorElUser(null);
+    };
+
+    const cerrarSesion = () => {
+        clearCookies();
+        nav("/login")
+    };
+
     return (
         <div id="app" style={({ height: "100vh" }, { display: "flex" })}>
             <SideBar />
             <main>
-                <div id="header" className="header">
-                    <h1 style={{ padding: "0 10px" }}>Modulo de ordenes de compra</h1>
-                    <button className="logout"><PowerSettingsNewOutlinedIcon /> Cerrar sesión</button>
-                </div>
+                <Toolbar sx={{ backgroundColor: '#1976d2' }}>
+                    <Typography
+                        component="h1"
+                        variant="h5"
+                        color="white"
+                        noWrap
+                        sx={{ flexGrow: 1}}
+                    >
+                        Modulo de ordenes de compra
+                    </Typography>
+                    <Box sx={{ flexGrow: 0 }}>
+                        <Tooltip title="Cerrar sesion">
+                            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                                <Avatar alt="Remy Sharp" src="/user.jpg" />
+                            </IconButton>
+                        </Tooltip>
+                        <Menu
+                            sx={{ mt: '45px' }}
+                            id="menu-appbar"
+                            anchorEl={anchorElUser}
+                            anchorOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                            keepMounted
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                            open={Boolean(anchorElUser)}
+                            onClose={handleCloseUserMenu}
+                        >
+
+                            <MenuItem onClick={cerrarSesion}>
+                                <Typography textAlign="center">Cerrar sesion</Typography>
+                            </MenuItem>
+                        </Menu>
+                    </Box>
+                </Toolbar>
                 <div id="content" className="content">
                     <Outlet />
                 </div>
