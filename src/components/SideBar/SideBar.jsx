@@ -26,7 +26,7 @@ function SideBar() {
                     <MenuItem component={<Link to="role" />}> Roles </MenuItem>
                     <MenuItem component={<Link to="permission" />}> Permisos </MenuItem>
                 </SubMenu>
-                <MenuItem icon={<AssignmentTurnedInOutlinedIcon />}> Ordenes de Compra </MenuItem>
+                <MenuItem component={<Link to="supplychain" />} icon={<AssignmentTurnedInOutlinedIcon />} > Ordenes de Compra </MenuItem>
                 <MenuItem icon={<Diversity3OutlinedIcon  />}> Proveedores </MenuItem>
                 <MenuItem icon={<DescriptionOutlinedIcon />}> Reportes </MenuItem>
                 

@@ -10,6 +10,7 @@ import { PrivateRoute } from './helper/Auth/PrivateRoute.jsx'
 import UserDetail from './components/Security/User/UserDetail.jsx'
 import RoleList from './components/Security/Role/RoleList.jsx'
 import PermissionList from './components/Security/Permission/PermissionList.jsx'
+import CreateSupplyChain from './components/SupplyChain/CreateSupplyChain.jsx'
 
 const router = createBrowserRouter([
   {
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
       {
         path: "permission",
         element: <PermissionList />
+      },
+      {
+        path: "supplychain",
+        element: <CreateSupplyChain />
       },
     ]
   }
