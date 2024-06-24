@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   FormLabel,
   Grid,
@@ -23,10 +24,13 @@ import {
   createFilterOptions
 } from "@mui/material";
 import { styled } from "@mui/system";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import SaveIcon from "@mui/icons-material/Save";
+import useFetchCreatePurchase from "../../hooks/useFetchCreatePurchase";
+import { createPurchaseService } from "../../services/supplychain";
+import { CheckCircleOutline } from "@mui/icons-material";
 
 const FormGrid = styled(Grid)(() => ({
   display: "flex",
@@ -34,78 +38,6 @@ const FormGrid = styled(Grid)(() => ({
 }));
 
 const filter = createFilterOptions();
-
-const initialProductsList = [
-  {
-    id: 1,
-    label: "Producto 1",
-    unit: "kg",
-    price: 10,
-    isv: 0,
-    quantity: 0,
-    subtotal: 0,
-  },
-  {
-    id: 2,
-    label: "Producto 2",
-    unit: "kg",
-    price: 10,
-    isv: 0,
-    quantity: 0,
-    subtotal: 0,
-  },
-  {
-    id: 3,
-    label: "Producto 3",
-    unit: "kg",
-    price: 10,
-    isv: 0,
-    quantity: 0,
-    subtotal: 0,
-  },
-  {
-    id: 4,
-    label: "Producto 4",
-    unit: "kg",
-    price: 10,
-    isv: 0,
-    quantity: 0,
-    subtotal: 0,
-  },
-];
-
-const departments = [
-  {
-    id: 1,
-    label: "Compras",
-  },
-  {
-    id: 2,
-    label: "Tecnologia",
-  },
-];
-
-const suppliers = [
-  {
-    id: 1,
-    label: "Bananera",
-  },
-  {
-    id: 2,
-    label: "Larach",
-  },
-];
-
-const paymentmethod = [
-  {
-    id: 1,
-    label: "Efectivo",
-  },
-  {
-    id: 2,
-    label: "Mixto",
-  },
-];
 
 const taxes = [
   {
@@ -122,14 +54,29 @@ const taxes = [
   },
 ];
 
-const units = ["kg", "litros", "unidad"];
-
-export default function CreateSupplyChain() {
+export default function createPurchase() {
   const [products, setProducts] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [productInputValue, setProductInputValue] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [productsList, setProductsList] = useState(initialProductsList);
+  const [productsList, setProductsList] = useState([]);
+  const { createPurchase, loading, error } = useFetchCreatePurchase();
+  const [paymentmethod, setPaymentMethod] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [purchaseNumber, setPurchaseNumber] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+
+  useEffect(() => {
+    if (createPurchase && createPurchase.body) {
+      setPaymentMethod(createPurchase.body.paymentMethods);
+      setSuppliers(createPurchase.body.suppliers);
+      setDepartments(createPurchase.body.departments);
+      setProductsList(createPurchase.body.products)
+      setUnits(createPurchase.body.unitMeasures)
+    }
+  }, [createPurchase]);
 
   const handleClickOpen = () => {
     setDialogOpen(true);
@@ -143,6 +90,8 @@ export default function CreateSupplyChain() {
 
   const handleAddProduct = () => {
     if (selectedProduct) {
+      selectedProduct.quantity = 1;
+      selectedProduct.subtotal = selectedProduct.quantity * selectedProduct.unitPrice;
       setProducts([...products, selectedProduct]);
     } else {
       const newProductItem = { id: "Nuevo", label: productInputValue };
@@ -153,7 +102,6 @@ export default function CreateSupplyChain() {
   };
 
   const handleRemoveProduct = (index) => {
-    console.log(index);
     setProducts(products.filter((_, i) => i !== index));
   };
 
@@ -161,15 +109,15 @@ export default function CreateSupplyChain() {
     const updatedProducts = products.map((product, i) =>
       i === index
         ? {
-            ...product,
-            [field]: value,
-            subtotal:
-              field === "price" || field === "quantity"
-                ? field === "price"
-                  ? parseFloat(value) * product.quantity
-                  : product.price * parseInt(value, 10)
-                : product.subtotal,
-          }
+          ...product,
+          [field]: value,
+          subtotal:
+            field === "unitPrice" || field === "quantity"
+              ? field === "unitPrice"
+                ? parseFloat(value) * product.quantity
+                : product.unitPrice * parseInt(value, 10)
+              : product.subtotal,
+        }
         : product
     );
     setProducts(updatedProducts);
@@ -177,43 +125,98 @@ export default function CreateSupplyChain() {
 
   const calculateSubtotalExento = () => {
     return products.reduce((acc, product) => {
-      return product.isv == 0 ? acc + product.price * product.quantity : acc;
+      return product.isv == 0 ? acc + product.unitPrice * product.quantity : acc;
     }, 0);
   };
 
   const calculateSubtotalGeneral = () => {
     return products.reduce(
-      (acc, product) => acc + product.price * product.quantity,
+      (acc, product) => acc + product.unitPrice * product.quantity,
       0
     );
   };
 
   const calculateSubtotalConImpuesto = () => {
     return products.reduce((acc, product) => {
-      return product.isv > 0 ? acc + product.price * product.quantity : acc;
+      return product.isv > 0 ? acc + product.unitPrice * product.quantity : acc;
     }, 0);
   };
 
   const calculateImpuestoTotal = () => {
     return products.reduce((acc, product) => {
       return product.isv > 0
-        ? acc + (product.price * product.quantity * product.isv) / 100
+        ? acc + (product.unitPrice * product.quantity * product.isv) / 100
         : acc;
     }, 0);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    console.log({
-      supplier: data.get("supplier"),
-      deptSol: data.get("dept-sol"),
-    });
+    const requestData = {
+      header: {
+        user: 'denis'
+      },
+      body: {
+        supplierIdUUID: data.get("supplier"),
+        purchaseDate: data.get("date"),
+        parameterDepartmentIdUUID: data.get("dept-sol"),
+        purchaseSubject: data.get("subject"),
+        subtotal: data.get("subTotal"),
+        exemptAmount: data.get("subTotalExent"),
+        taxedAmount: data.get("subTotalIsv"),
+        isvAmount: data.get("isvTotal"),
+        total: data.get("total"),
+        letterValue: 'DE',
+        note: data.get("note"),
+        parameterPaymentMethodIdUUID: data.get("paymentmethod"),
+        detailPurchase: products.map(product => ({
+          item: product.productCode,
+          unitOM: product.unitOM,
+          productIdUUID: product.id,
+          quantity: product.quantity,
+          unitPrice: product.unitPrice,
+          subTotal: product.subtotal,
+          productName: product.productName,
+          isv: product.isv
+        }))
+      }
+    };
+
+    try {
+      const responseData = await createPurchaseService(requestData);
+      setPurchaseNumber(responseData.body)
+      setSuccessOpen(true);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleCloseSucces = (event, reason) => {
+    if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+      setSuccessOpen(false);
+    }
+  };
+
+  const handleNewPurchase = () => {
+    setSuccessOpen(false);
+  };
+
+  const handleGenerateExcel = () => {
+    // Lógica para generar Excel
+    console.log('Generar Excel');
+    setSuccessOpen(false);
+  };
+
+  const handleGeneratePDF = () => {
+    // Lógica para generar PDF
+    console.log('Generar PDF');
+    setSuccessOpen(false);
   };
 
   return (
     <div>
-      <Grid component="form" onSubmit={handleSubmit} container spacing={3}>
+      <Grid component="form" onSubmit={handleSubmit} container spacing={3} pb={5}>
         <FormGrid item xs={12} md={12}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={6} display="flex" alignItems="center">
@@ -248,7 +251,7 @@ export default function CreateSupplyChain() {
           >
             {suppliers.map((supplier, index) => (
               <MenuItem key={index} value={supplier.id}>
-                {supplier.label}
+                {supplier.supplierName}
               </MenuItem>
             ))}
           </Select>
@@ -268,7 +271,7 @@ export default function CreateSupplyChain() {
           >
             {departments.map((department, index) => (
               <MenuItem key={index} value={department.id}>
-                {department.label}
+                {department.description}
               </MenuItem>
             ))}
           </Select>
@@ -303,7 +306,7 @@ export default function CreateSupplyChain() {
           >
             {paymentmethod.map((method, index) => (
               <MenuItem key={index} value={method.id}>
-                {method.label}
+                {method.description}
               </MenuItem>
             ))}
           </Select>
@@ -362,19 +365,19 @@ export default function CreateSupplyChain() {
                         <DeleteOutlineIcon />
                       </div>
                     </TableCell>
-                    <TableCell>{product.label}</TableCell>
+                    <TableCell>{product.productName}</TableCell>
                     <TableCell>
                       <Select
                         size="small"
-                        value={product.unit}
+                        value={product.unitOM}
                         onChange={(e) =>
-                          handleProductChange(index, "unit", e.target.value)
+                          handleProductChange(index, "unitOM", e.target.value)
                         }
                         fullWidth
                       >
                         {units.map((unit) => (
-                          <MenuItem key={unit} value={unit}>
-                            {unit}
+                          <MenuItem key={unit.id} value={unit.id}>
+                            {unit.description}
                           </MenuItem>
                         ))}
                       </Select>
@@ -398,9 +401,9 @@ export default function CreateSupplyChain() {
                     <TableCell>
                       <TextField
                         size="small"
-                        value={product.price}
+                        value={parseFloat(product.unitPrice).toFixed(2)}
                         onChange={(e) =>
-                          handleProductChange(index, "price", e.target.value)
+                          handleProductChange(index, "unitPrice", e.target.value)
                         }
                         type="number"
                         fullWidth
@@ -437,14 +440,14 @@ export default function CreateSupplyChain() {
               freeSolo
               options={productsList}
               getOptionLabel={(option) =>
-                option.label ? option.label : option
+                option.productName ? option.productName : option
               }
               filterOptions={(options, params) => {
                 const filtered = filter(options, params);
 
                 if (params.inputValue !== "") {
                   filtered.push({
-                    label: `Agregar "${params.inputValue}"`,
+                    productName: `Agregar "${params.inputValue}"`,
                     inputValue: params.inputValue,
                   });
                 }
@@ -458,21 +461,21 @@ export default function CreateSupplyChain() {
                 if (typeof newValue === "string") {
                   setSelectedProduct({
                     id: "Nuevo",
-                    label: newValue,
+                    productName: newValue,
                     isv: 0,
                     quantity: 0,
-                    price: 0,
-                    unit: "",
+                    unitPrice: 0,
+                    unitOM: "",
                     subtotal: 0,
                   });
                 } else if (newValue && newValue.inputValue) {
                   setSelectedProduct({
                     id: "Nuevo",
-                    label: newValue.inputValue,
+                    productName: newValue.inputValue,
                     isv: 0,
                     quantity: 0,
-                    price: 0,
-                    unit: "",
+                    unitPrice: 0,
+                    unitOM: "",
                     subtotal: 0,
                   });
                 } else {
@@ -499,12 +502,13 @@ export default function CreateSupplyChain() {
           </DialogActions>
         </Dialog>
         <Grid item container spacing={2} pt="10px">
-          <FormGrid item xs={6}>
+          <FormGrid item xs={5}>
             <FormLabel htmlFor="note">
               Comentario
             </FormLabel>
             <TextField
               id="note"
+              name="note"
               multiline
               rows={4}
               defaultValue=""
@@ -512,33 +516,7 @@ export default function CreateSupplyChain() {
             />
           </FormGrid>
 
-          <Grid xs={6}>
-            <Grid
-              container
-              spacing={2}
-              alignItems="center"
-              justifyContent="flex-end"
-              mt="0px"
-            >
-              <Grid item>
-                <FormLabel htmlFor="subTotalExent">Subtotal Exento</FormLabel>
-              </Grid>
-              <Grid item>
-                <OutlinedInput
-                  id="subTotalExent"
-                  value={calculateSubtotalExento().toFixed(2)}
-                  startAdornment={
-                    <InputAdornment position="start">L.</InputAdornment>
-                  }
-                  inputProps={{
-                    readOnly: true,
-                  }}
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                />
-              </Grid>
-            </Grid>
+          <Grid item xs={7}>
             <Grid
               container
               spacing={2}
@@ -552,6 +530,7 @@ export default function CreateSupplyChain() {
               <Grid item>
                 <OutlinedInput
                   id="subTotal"
+                  name="subTotal"
                   value={calculateSubtotalGeneral().toFixed(2)}
                   startAdornment={
                     <InputAdornment position="start">L.</InputAdornment>
@@ -573,13 +552,42 @@ export default function CreateSupplyChain() {
               mt="0px"
             >
               <Grid item>
+                <FormLabel htmlFor="subTotalExent">Importe Exento</FormLabel>
+              </Grid>
+              <Grid item>
+                <OutlinedInput
+                  id="subTotalExent"
+                  name="subTotalExent"
+                  value={calculateSubtotalExento().toFixed(2)}
+                  startAdornment={
+                    <InputAdornment position="start">L.</InputAdornment>
+                  }
+                  inputProps={{
+                    readOnly: true,
+                  }}
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                />
+              </Grid>
+            </Grid>
+
+            <Grid
+              container
+              spacing={2}
+              alignItems="center"
+              justifyContent="flex-end"
+              mt="0px"
+            >
+              <Grid item>
                 <FormLabel htmlFor="subTotalIsv">
-                  Subtotal Con Impuesto
+                  Importe Gravado
                 </FormLabel>
               </Grid>
               <Grid item>
                 <OutlinedInput
                   id="subTotalIsv"
+                  name="subTotalIsv"
                   value={calculateSubtotalConImpuesto().toFixed(2)}
                   startAdornment={
                     <InputAdornment position="start">L.</InputAdornment>
@@ -601,11 +609,12 @@ export default function CreateSupplyChain() {
               mt="0px"
             >
               <Grid item>
-                <FormLabel htmlFor="isvTotal">Impuesto total</FormLabel>
+                <FormLabel htmlFor="isvTotal">Importe ISV</FormLabel>
               </Grid>
               <Grid item>
                 <OutlinedInput
                   id="isvTotal"
+                  name="isvTotal"
                   value={calculateImpuestoTotal().toFixed(2)}
                   startAdornment={
                     <InputAdornment position="start">L.</InputAdornment>
@@ -633,6 +642,7 @@ export default function CreateSupplyChain() {
               <Grid item>
                 <OutlinedInput
                   id="total"
+                  name="total"
                   value={(
                     calculateSubtotalGeneral() + calculateImpuestoTotal()
                   ).toFixed(2)}
@@ -649,6 +659,33 @@ export default function CreateSupplyChain() {
             </Grid>
           </Grid>
         </Grid>
+        <Dialog
+          open={successOpen}
+          onClose={handleCloseSucces}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"Orden Creada Exitosamente"}</DialogTitle>
+          <DialogContent>
+            <div style={{ textAlign: 'center' }}>
+              <CheckCircleOutline style={{ fontSize: '80px', color: 'green' }} />
+            </div>
+            <DialogContentText id="alert-dialog-description">
+              Su orden es {<span style={{ fontWeight: "bold" }}>{purchaseNumber}</span>} ¿Qué te gustaría hacer a continuación?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleNewPurchase} color="primary">
+              Crear nueva orden
+            </Button>
+            <Button onClick={handleGenerateExcel} color="primary">
+              Generar Excel
+            </Button>
+            <Button onClick={handleGeneratePDF} color="primary" autoFocus>
+              Generar PDF
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Grid>
     </div>
   );

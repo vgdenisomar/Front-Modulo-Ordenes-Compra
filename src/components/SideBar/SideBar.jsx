@@ -11,7 +11,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 function SideBar() {
     const [collapsed, setCollapsed] = React.useState(false);
     return (
-        <Sidebar style={{ height: "100vh" }} collapsed={collapsed}>
+        <Sidebar className="sideBar" collapsed={collapsed}>
             <Menu>
                 <MenuItem
                     icon = {<MenuIcon />}
